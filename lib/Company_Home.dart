@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class HomePage extends StatefulWidget {
+class HomePageCompany extends StatefulWidget {
   final bool isUser;
 
-  HomePage({required this.isUser});
+  HomePageCompany({required this.isUser});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _HomePageCompanyState createState() => _HomePageCompanyState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageCompanyState extends State<HomePageCompany> {
   int _currentIndex = 0;
 
   @override

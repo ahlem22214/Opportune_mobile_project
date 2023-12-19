@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'Sign_in.dart';
+import 'SigninScreen.dart';
+
 
 class FirstPage extends StatelessWidget {
   @override
@@ -82,14 +83,18 @@ class FirstPage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 20.0),
-                    Text(
-                      "Explore all the most exciting job roles\nbased on your interest and study major.",
-                      style: TextStyle(
-                        color: Colors.grey[300],
-                        fontSize: 18.0,
-                        letterSpacing: 1.2,
+                    Container(
+                      width: MediaQuery.of(context).size.width * 0.8, // Set a percentage of screen width
+                      child: Text(
+                        "Explore all the most exciting job roles based on your interest and study major.",
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 18.0,
+                          letterSpacing: 1.2,
+                        ),
+                        textAlign: TextAlign.left,
+                        softWrap: true, // Allow text to wrap onto the next line
                       ),
-                      textAlign: TextAlign.left,
                     ),
                   ],
                 ),
@@ -106,7 +111,7 @@ class FirstPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => Signin(),
+                    pageBuilder: (context, animation, secondaryAnimation) => SigninScreen(),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       const begin = Offset(1.0, 0.0);
                       const end = Offset.zero;
