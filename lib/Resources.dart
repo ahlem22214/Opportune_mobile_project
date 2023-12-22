@@ -40,14 +40,16 @@ class ArticleList extends StatelessWidget {
           return ListView.builder(
             itemCount: articles.length,
             itemBuilder: (context, index) {
+              Color articleColor = parseColor(articles[index].color);
               return Container(
+                color:articleColor,
                 margin: EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 200,
-                      height: 150,
+                      width: 150,
+                      height: 160,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: FutureBuilder(
@@ -79,13 +81,13 @@ class ArticleList extends StatelessWidget {
                           children: [
                             Text(
                               articles[index].title,
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             SizedBox(height: 2.0),
                             Text(
                               articles[index].description,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10,
                                 color: Colors.black,
                               ),
                             ),
@@ -122,6 +124,15 @@ class ArticleList extends StatelessWidget {
     );
   }
 }
+
+
+
+Color parseColor(String colorString) {
+  String hexColor = colorString.replaceAll("#", "");
+  int intValue = int.parse(hexColor, radix: 16);
+  return Color(intValue | 0xFF000000); // Set alpha value to 255 (fully opaque)
+}
+
 
 class Article {
   final String title;

@@ -6,6 +6,7 @@ import 'Blog.dart';
 import 'profile.dart';
 import'Home_Page.dart';
 import 'BottomNavBar.dart';
+import 'news_screen.dart';
 
 
 class ToolsScreen extends StatefulWidget {
@@ -106,7 +107,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ArticleList()),
+                                  builder: (context) => NewsScreen()),
                             );
                           },
                         ),
