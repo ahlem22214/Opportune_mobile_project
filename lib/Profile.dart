@@ -1,173 +1,433 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'Blog.dart';
 import 'ToolsScreen.dart';
 import 'Home_Page.dart';
 import 'BottomNavBar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
   _ProfilePageState createState() => _ProfilePageState();
-
 }
 
-
 class _ProfilePageState extends State<ProfilePage> {
+  bool isUploading = false; // Track whether an upload is in progress
+
   int _currentIndex = 3;
+  late String userId;
+  late Map<String, dynamic> userData = Map();
+  late TextEditingController phoneNumberController;
+  late TextEditingController emailController;
+  late TextEditingController bioController;
+  late TextEditingController educationController;
+  late TextEditingController experienceController;
+  late List<String> educationList;
+  late List<String> experienceList;
+  late GlobalKey<FormState> emailFormKey;
+  late GlobalKey<FormState> phoneFormKey;
+  late GlobalKey<FormState> bioFormKey;
+  late GlobalKey<FormState> educationFormKey;
+  late GlobalKey<FormState> experienceFormKey;
+  late File? pickedImage = null;
+  late firebase_storage.Reference storageReference;
 
-  // Example user data, replace with your data model or fetch from an API
-  String userName = 'John Doe';
-  String dateOfBirth = '01/01/1990';
-  String phoneNumber = '123-456-7890';
+  @override
+  void initState() {
+    super.initState();
+    emailFormKey = GlobalKey<FormState>();
+    phoneFormKey = GlobalKey<FormState>();
+    bioFormKey = GlobalKey<FormState>();
+    educationFormKey = GlobalKey<FormState>();
+    experienceFormKey = GlobalKey<FormState>();
+    fetchUserData();
+    phoneNumberController = TextEditingController();
+    emailController = TextEditingController();
+    bioController = TextEditingController();
+    educationController = TextEditingController();
+    experienceController = TextEditingController();
+    educationList = [];
+    experienceList = [];
+    storageReference = firebase_storage.FirebaseStorage.instance.ref().child('ProfileImage');
+  }
 
-  // Example notification and settings status
-  bool isNotificationEnabled = true;
-  bool isSwitchEnabled = true;
-  bool isCheckboxSelected = true;
+  Future<void> fetchUserData() async {
+    User? user = FirebaseAuth.instance.currentUser;
 
-  // Default profile image URL
-  String defaultImageUrl = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRWfQZi86lGQXqdzCSPKOAbOhCaQUBRPCexU4WUyYKB5LasBNyoynjLy_5-zg&s';
+    if (user != null) {
+      userId = user.uid;
 
-  // User-uploaded image URL (replace this with the actual user image URL)
-  String userImageUrl = '';
+      DocumentSnapshot userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
+      setState(() {
+        userData = userDoc.data() as Map<String, dynamic>;
+        phoneNumberController.text = userData['phoneNumber'] ?? '';
+        emailController.text = userData['email'] ?? '';
+        bioController.text = userData['bio'] ?? '';
+        educationController.text = userData['education'] ?? '';
+        experienceController.text = userData['experience'] ?? '';
+        if (userData['educationList'] != null) {
+          educationList = List.from(userData['educationList']);
+        }
+        if (userData['experienceList'] != null) {
+          experienceList = List.from(userData['experienceList']);
+        }
+      });
+    }
+  }
 
+  Future<void> _updateUserData() async {
+    try {
+      if (!mounted) return; // Check if the widget is still mounted
+
+      // Set the flag to indicate that an upload is in progress
+      isUploading = true;
+
+      // Show loading indicator
+      showLoadingSnackBar();
+
+      // Upload the image to Firebase Storage if it's not null
+      String? imageUrl;
+      if (pickedImage != null) {
+        imageUrl = await uploadImage();
+
+        // Check if the widget is still mounted after the image upload
+        if (!mounted) return;
+      }
+
+      // Update user data in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'phoneNumber': phoneNumberController.text,
+        'email': emailController.text,
+        'userImageUrl': imageUrl ?? userData['userImageUrl'],
+        'bio': bioController.text,
+        'education': educationController.text,
+        'experience': experienceController.text,
+        'educationList': educationList,
+        'experienceList': experienceList,
+        'isNotificationEnabled': userData['isNotificationEnabled'] ?? false,
+        // Add other fields if needed
+      });
+
+      // Optional: Fetch and update user data again after a successful update
+      await fetchUserData();
+
+      if (!mounted) return;
+
+      // Hide loading indicator
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+
+      // Show success message
+      showSuccessSnackBar();
+    } catch (error) {
+      // ... error handling
+    } finally {
+      // Reset the flag when the update process is complete
+      isUploading = false;
+    }
+  }
+
+  Future<String?> uploadImage() async {
+    // Upload image to Firebase Storage
+    await storageReference.putFile(pickedImage!);
+    return storageReference.getDownloadURL();
+  }
+
+  void showLoadingSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Updating profile...'),
+      duration: Duration(minutes: 5),
+    ));
+  }
+
+  void showSuccessSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Profile updated successfully'),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body:
-      Stack(
-        children: [
-          // CustomPaint to draw a semi-ellipse
-          CustomPaint(
-            painter: SemiEllipsePainter(),
-            child: Container(
-              height: 120,
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent navigation if an upload is in progress
+        return !isUploading;
+      },
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120,
+              flexibleSpace: FlexibleSpaceBar(
+                background: CustomPaint(
+                  painter: SemiEllipsePainter(),
+                  child: Container(
+                    height: 120,
+                  ),
+                ),
+              ),
             ),
-          ),
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Color(0xFF356899), // Color for the circle avatar
-                        backgroundImage: userImageUrl.isEmpty
-                            ? NetworkImage(defaultImageUrl)
-                            : NetworkImage(userImageUrl),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        userName,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                buildDetailRow(Icons.person, 'User Name', userName),
-                buildDetailRow(Icons.cake, 'Date of Birth', dateOfBirth),
-                buildDetailRow(Icons.phone, 'Phone Number', phoneNumber),
-                buildDetailRow(Icons.settings, 'Settings', 'Tap to edit', onTap: () {
-                  // Handle settings tap
-                }),
-                ListTile(
-                  leading: Icon(Icons.notifications, color: Color(0xFF356899)), // Color for the notification icon
-                  title: Text('Activate Notifications'),
-                  trailing: Switch(
-                    value: isNotificationEnabled ?? false,
-                    onChanged: (value) {
-                      setState(() {
-                        isNotificationEnabled = value;
-                      });
+            SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  GestureDetector(
+                    onTap: () {
+                      _pickImage();
                     },
+                    child: Stack(
+                      alignment: Alignment.topCenter,
+                      children: [
+                        CircleAvatar(
+                          radius: 80,
+                          backgroundColor: Color(0xFF356899),
+                          backgroundImage: pickedImage != null
+                              ? FileImage(pickedImage!) as ImageProvider
+                              : (userData['userImageUrl'] != null &&
+                              userData['userImageUrl'].isNotEmpty
+                              ? NetworkImage(userData['userImageUrl'])
+                              : NetworkImage(
+                              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRWfQZi86lGQXqdzCSPKOAbOhCaQUBRPCexU4WUyYKB5LasBNyoynjLy_5-zg&s')),
+                        ),
+                        if (pickedImage == null)
+                          Positioned(
+                            top: 130,
+                            child: Icon(
+                              Icons.add_a_photo,
+                              color: Colors.black,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.swap_horizontal_circle, color: Color(0xFF356899)), // Color for the switch icon
-                  title: Text('Swap to Switch Icon'),
-                  trailing: Switch(
-                    value: isSwitchEnabled ?? false,
-                    onChanged: (value) {
-                      setState(() {
-                        isSwitchEnabled = value;
-                      });
-                    },
+                  SizedBox(height: 15),
+                  Text(
+                    '${userData['firstName']} ${userData['lastName']}',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.check_box, color: Color(0xFF356899)), // Color for the checkbox icon
-                  title: Text('Checkbox'),
-                  trailing: Checkbox(
-                    value: isCheckboxSelected ?? false,
-                    onChanged: (value) {
-                      setState(() {
-                        isCheckboxSelected = value ?? false;
-                      });
-                    },
+                  buildDetailRow(Icons.person, 'User Name', '${userData['firstName']} ${userData['lastName']}'),
+                  buildEditableDetailRow(Icons.email, 'Email', emailController, emailFormKey),
+                  buildEditableDetailRow(Icons.phone, 'Phone Number', phoneNumberController, phoneFormKey),
+                  buildEditableDetailRow(Icons.info, 'Bio', bioController, bioFormKey),
+                  buildEducationSection(),
+                  buildExperienceSection(),
+                  ListTile(
+                    leading: Icon(Icons.notifications, color: Color(0xFF356899)),
+                    title: Text('Allow Notifications'),
+                    trailing: Switch(
+                      value: userData['isNotificationEnabled'] ?? false,
+                      onChanged: (value) {
+                        setState(() {
+                          userData['isNotificationEnabled'] = value;
+                        });
+                      },
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 100),
+                ],
+              ),
             ),
-          ),
-]
+          ],
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _currentIndex,
+          onTabTapped: (index) {
+            switch (index) {
+              case 0:
+                navigateTo(HomePage(isUser: true));
+                break;
+              case 1:
+                navigateTo(BlogPage());
+                break;
+              case 2:
+                navigateTo(ToolsScreen());
+                break;
+              case 3:
+                navigateTo(ProfilePage());
+                break;
+            }
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            if (emailFormKey.currentState!.validate() &&
+                phoneFormKey.currentState!.validate() &&
+                bioFormKey.currentState!.validate()) {
+              _updateUserData();
+            }
+          },
+          child: Icon(Icons.save),
+        ),
       ),
-    bottomNavigationBar: BottomNavBar(
-    currentIndex: _currentIndex,
-    onTabTapped: (index) {
-    // Handle navigation based on the tapped item
-    switch (index) {
-    case 0:
-      Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => HomePage(isUser: true)),
-    );
-    break;
-    case 1:
-      Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => BlogPage()),
-    );
-    break;
-    case 2:
-      Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => ToolsScreen()),
-    );
-    break;
-    case 3:
-      Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => ProfilePage()),
-    );
-    break;
-    }
-    },
-    ),
-
     );
   }
+
+  void navigateTo(Widget page) {
+    // Allow navigation only if no update is in progress
+    if (!isUploading) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => page),
+      );
+    }
+  }
+
+  Widget buildDetailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, color: Color(0xFF356899)),
+      title: Text(label),
+      subtitle: Text(value),
+    );
+  }
+
+  Widget buildEditableDetailRow(IconData icon, String label, TextEditingController controller, GlobalKey<FormState> formKey) {
+    return Form(
+      key: formKey,
+      child: ListTile(
+        leading: Icon(icon, color: Color(0xFF356899)),
+        title: Text(label),
+        subtitle: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: 'Tap to edit',
+          ),
+          validator: (value) {
+            if (label == 'Email' && !isValidEmail(value!)) {
+              return 'Invalid email address';
+            }
+            if (label == 'Phone Number' && !isValidPhoneNumber(value!)) {
+              return 'Invalid phone number';
+            }
+            // Add more validation logic based on your requirements
+            return null;
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget buildEducationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: Icon(Icons.school, color: Color(0xFF356899)),
+          title: Text('Education'),
+        ),
+        ...educationList.map((education) => ListTile(
+          leading: Icon(Icons.star),
+          title: Text(education),
+        )),
+        Form(
+          key: educationFormKey,
+          child: ListTile(
+            leading: Icon(Icons.add),
+            title: TextFormField(
+              controller: educationController,
+              decoration: InputDecoration(
+                hintText: 'Add Education',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter education details';
+                }
+                return null;
+              },
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.add_circle),
+              onPressed: () {
+                if (educationFormKey.currentState!.validate()) {
+                  setState(() {
+                    educationList.add(educationController.text);
+                    educationController.clear();
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildExperienceSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: Icon(Icons.work, color: Color(0xFF356899)),
+          title: Text('Experience'),
+        ),
+        ...experienceList.map((experience) => ListTile(
+          leading: Icon(Icons.star),
+          title: Text(experience),
+        )),
+        Form(
+          key: experienceFormKey,
+          child: ListTile(
+            leading: Icon(Icons.add),
+            title: TextFormField(
+              controller: experienceController,
+              decoration: InputDecoration(
+                hintText: 'Add Experience',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter experience details';
+                }
+                return null;
+              },
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.add_circle),
+              onPressed: () {
+                if (experienceFormKey.currentState!.validate()) {
+                  setState(() {
+                    experienceList.add(experienceController.text);
+                    experienceController.clear();
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool isValidEmail(String email) {
+    RegExp emailRegex = RegExp(r'^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$');
+    return emailRegex.hasMatch(email);
+  }
+
+  bool isValidPhoneNumber(String phone) {
+    RegExp phoneRegex = RegExp(r'^\d{8}$');
+    return phoneRegex.hasMatch(phone);
+  }
+
+
+  Future<void> _pickImage() async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        pickedImage = File(image.path);
+      });
+    }
+  }
 }
-
-
-
-Widget buildDetailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
-  return ListTile(
-    onTap: onTap,
-    leading: Icon(icon, color: Color(0xFF356899)), // Color for the detail row icons
-    title: Text(label),
-    subtitle: Text(value),
-  );
-}
-
 
 class SemiEllipsePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..color = Color(0xFF356899); // Color for the semi ellipse
+    Paint paint = Paint()..color = Color(0xFF356899);
 
     Path path = Path()
       ..moveTo(0, 0)

@@ -1,74 +1,49 @@
 import 'package:flutter/material.dart';
-import 'BottomNavBar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'Home_Page.dart'; // Import your BlogPage file
 import 'ToolsScreen.dart'; // Import your ToolsPage file
 import 'Profile.dart'; // Import your ProfilePage file
-import 'Home_Page.dart';
+import 'BottomNavBar.dart';
 
-class BlogPage extends StatefulWidget {
-  @override
-  _BlogPageState createState() => _BlogPageState();
-}
-class _BlogPageState extends State<BlogPage> {
+
+
+
+class BlogPage extends StatelessWidget {
   int _currentIndex = 1;
-
-  List<BlogPost> blogPosts = [];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: RichText(
-          text: TextSpan(
-            children: [
-              WidgetSpan(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Icon(
-                    Icons.library_books,
-                    size: 24, // Set the icon size
-                  ),
-                ),
+        title: Text('Blogs'),
+      ),
+      body: BlogList(),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 100.0),
+        child: Container(
+          width: 300, // Largeur du bouton
+          height: 45, // Hauteur du bouton
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PostBlogPage()),
+              );
+            },
+            label: Text(
+              'Post Blog', // Changed the label to 'Post Blog'
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-              TextSpan(
-                text: 'Blog',
-                style: TextStyle(
-                  fontFamily: 'Roboto', // Replace with the desired font family
-                  fontSize: 25, // Set the font size
-                  color: Colors.black, // Set the font color to black
-                ),
-              ),
-            ],
+            ),
+            backgroundColor: Colors.indigo[300],
           ),
         ),
-        backgroundColor: Colors.deepPurple, // Set the background color to deep purple
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Handle search action
-            },
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: blogPosts.length,
-              itemBuilder: (context, index) {
-                return BlogPostWidget(blogPost: blogPosts[index], onAddComment: _addComment);
-              },
-            ),
-          ),
-          ShareExperienceButton(
-            onPostExperience: (BlogPost newPost) {
-              setState(() {
-                blogPosts.add(newPost);
-              });
-            },
-          ),
-        ],
-      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTabTapped: (index) {
@@ -101,251 +76,390 @@ class _BlogPageState extends State<BlogPage> {
           }
         },
       ),
-
     );
-  }
-
-  void _addComment(BlogPost blogPost, String newComment) {
-    setState(() {
-      blogPost.comments.add(Comment(author: 'User', text: newComment));
-    });
   }
 }
-
-class BlogPostWidget extends StatelessWidget {
-  final BlogPost blogPost;
-  final Function(BlogPost, String) onAddComment;
-
-  BlogPostWidget({required this.blogPost, required this.onAddComment});
-
+class BlogList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.all(16),
-      elevation: 4, // Add elevation for a card shadow
-      color: Colors.deepPurple[100], // Set card background color to a shade of deep purple
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            title: Text(blogPost.title),
-            subtitle: Text(
-              '${blogPost.author} • ${_formatDateTime(blogPost.dateTime)}',
-            ),
-            leading: Icon(Icons.subject, color: Colors.deepPurple), // Add a subject icon
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(blogPost.content),
-          ),
-          CommentSection(comments: blogPost.comments),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Handle adding a new comment
-              _showCommentDialog(context);
-            },
-            icon: Icon(Icons.comment), // Add a comment icon
-            label: Text('Add Comment'),
-            style: ElevatedButton.styleFrom(
-              primary: Colors.black, // Set button color to black
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('blogs').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${_formatTwoDigitNumber(dateTime.hour)}:${_formatTwoDigitNumber(dateTime.minute)} - ${_formatTwoDigitNumber(dateTime.day)}/${_formatTwoDigitNumber(dateTime.month)}/${dateTime.year}';
-  }
+        var blogs = snapshot.data!.docs;
+        blogs.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+        return ListView(
+          children: blogs.map<Widget>((blog) {
+            Map<String, dynamic>? blogData = blog.data() as Map<String, dynamic>?;
 
-  String _formatTwoDigitNumber(int number) {
-    return number.toString().padLeft(2, '0');
-  }
-
-  Future<void> _showCommentDialog(BuildContext context) async {
-    String newComment = '';
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Add Comment'),
-          content: TextField(
-            decoration: InputDecoration(
-              hintText: 'Write your comment...',
-            ),
-            onChanged: (value) {
-              // Update the comment text
-              newComment = value;
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Add the comment to the list
-                onAddComment(blogPost, newComment);
-                Navigator.of(context).pop();
-              },
-              child: Text('Add'),
-            ),
-          ],
+            if (blogData != null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blue[300],
+                        child: Icon(Icons.person),
+                      ),
+                      title: FutureBuilder<String>(
+                        future: getUserNameFromUserId(blogData['userId']),
+                        builder: (context, userSnapshot) {
+                          if (userSnapshot.connectionState == ConnectionState.waiting) {
+                            return Text(
+                              'Loading...',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            );
+                          }
+                          return Text(
+                            userSnapshot.data ?? 'Anonymous',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  // Conteneur du blog avec une couleur spécifique
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 3, horizontal: 20),
+                    padding: EdgeInsets.fromLTRB(8, 3, 0, 8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            blogData['title'] ?? 'No Title',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            blogData['content'],
+                            style: TextStyle(color: Colors.black, fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Conteneur des commentaires avec une autre couleur
+                  Container(
+                    color: Colors.purple[50], // Couleur différente pour les commentaires
+                    margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    padding: EdgeInsets.fromLTRB(8, 5, 0, 8),
+                    child: AddCommentWidget(blogId: blog.id),
+                  ),
+                ],
+              );
+            } else {
+              return SizedBox.shrink();
+            }
+          }).toList(),
         );
       },
     );
   }
+
+  Future<String> getUserNameFromUserId(String userId) async {
+    try {
+      DocumentSnapshot userSnapshot =
+      await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      Map<String, dynamic>? userData =
+      userSnapshot.data() as Map<String, dynamic>?;
+
+      if (userData != null) {
+        return '${userData['firstName']} ${userData['lastName']}';
+      }
+    } catch (e) {
+      print('Error getting user data: $e');
+    }
+
+    return 'Anonymous';
+  }
 }
 
-class CommentSection extends StatelessWidget {
-  final List<Comment> comments;
+class AddCommentWidget extends StatelessWidget {
+  final String blogId;
+  final TextEditingController _commentController = TextEditingController();
 
-  CommentSection({required this.comments});
+  AddCommentWidget({required this.blogId});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)), // Set comment section text color
-        for (var comment in comments) CommentWidget(comment: comment),
+        SizedBox(height: 16),
+        Text(
+          'Comments:',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: 8),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('comments')
+              .where('blogId', isEqualTo: blogId)
+              .snapshots(),
+          builder: (context, commentSnapshot) {
+            if (!commentSnapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            var comments = commentSnapshot.data!.docs;
+
+            if (comments.isEmpty) {
+              return Text(
+                'No comments yet.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              );
+            }
+
+            return Column(
+              children: comments.map<Widget>((comment) {
+                Map<String, dynamic>? commentData =
+                comment.data() as Map<String, dynamic>?;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.blue[300],
+                        radius: 10,
+                        child: Icon(Icons.person,
+                          size: 15,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FutureBuilder<String>(
+                            future: getUserNameFromUserId(
+                                commentData?['userId'] ?? ''),
+                            builder: (context, userSnapshot) {
+                              if (userSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Text('Loading...');
+                              }
+                              return Text(
+                                userSnapshot.data ?? 'Anonymous',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            commentData?['content'] ?? '',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _commentController,
+                decoration: InputDecoration(
+                  hintText: 'Add a comment...',
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.send),
+              onPressed: () {
+                addComment(blogId, _commentController.text.trim());
+                _commentController.clear();
+              },
+            ),
+          ],
+        ),
       ],
     );
   }
-}
 
-class CommentWidget extends StatelessWidget {
-  final Comment comment;
+  Future<void> addComment(String blogId, String commentContent) async {
+    try {
+      String userId =
+          FirebaseAuth.instance.currentUser?.uid ?? 'anonymous_user';
 
-  CommentWidget({required this.comment});
+      await FirebaseFirestore.instance.collection('comments').add({
+        'blogId': blogId,
+        'userId': userId,
+        'content': commentContent,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(comment.author),
-      subtitle: Text(comment.text),
-    );
+      print('Comment added successfully!');
+    } catch (e) {
+      print('Error adding comment: $e');
+    }
+  }
+
+  Future<String> getUserNameFromUserId(String userId) async {
+    try {
+      DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      Map<String, dynamic>? userData =
+      userSnapshot.data() as Map<String, dynamic>?;
+
+      if (userData != null) {
+        return '${userData['firstName']} ${userData['lastName']}';
+      }
+    } catch (e) {
+      print('Error getting user data: $e');
+    }
+
+    return 'Anonymous';
   }
 }
-
-class ShareExperienceButton extends StatelessWidget {
-  final Function(BlogPost) onPostExperience;
-
-  ShareExperienceButton({required this.onPostExperience});
-
+class PostBlogPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        // Navigate to the page where the user can share their experience
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ShareExperiencePage(
-              onPostExperience: onPostExperience,
-            ),
-          ),
+  _PostBlogPageState createState() => _PostBlogPageState();
+}
+
+class _PostBlogPageState extends State<PostBlogPage> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _blogController = TextEditingController();
+
+  Future<void> postBlog() async {
+    try {
+      String userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous_user';
+      String blogTitle = _titleController.text.trim();
+      String blogContent = _blogController.text.trim();
+
+      if (blogContent.isNotEmpty && blogTitle.isNotEmpty) {
+        // Création d'un ID pour le blog
+        String blogId = FirebaseFirestore.instance.collection('blogs').doc().id;
+        await FirebaseFirestore.instance.collection('blogs').add({
+          'blogId': blogId, // Ajout de l'identifiant unique du blog
+          'userId': userId,
+          'title': blogTitle,
+          'content': blogContent,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        _titleController.clear();
+        _blogController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Blog posted successfully!')),
         );
-      },
-      child: Text('Share Your Experience', style: TextStyle(color: Colors.black)), // Set text color to white
-      style: ElevatedButton.styleFrom(
-        primary: Colors.deepPurpleAccent, // Set button color to black
-      ),
-    );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please fill in title and content before posting!')),
+        );
+      }
+    } catch (e) {
+      print('Error posting blog: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to post blog. Please try again later.'),
+        ),
+      );
+    }
   }
-}
-
-class ShareExperiencePage extends StatefulWidget {
-  final Function(BlogPost) onPostExperience;
-
-  ShareExperiencePage({required this.onPostExperience});
-
-  @override
-  _ShareExperiencePageState createState() => _ShareExperiencePageState();
-}
-
-class _ShareExperiencePageState extends State<ShareExperiencePage> {
-  TextEditingController titleController = TextEditingController();
-  TextEditingController postController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Share Your Experience', style: TextStyle(color: Colors.white)), // Set text color to deep orange
-        backgroundColor: Colors.deepPurpleAccent, // Set the background color to a shade of purple
+        title: Text('Add a Blog'), // Changed the title to 'Add a Blog'
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                hintText: 'Write your post title...',
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  hintText: 'Blog Title', // Changed hint to 'Title...'
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            TextField(
-              controller: postController,
-              decoration: InputDecoration(
-                hintText: 'Write your post...',
+              SizedBox(height: 16),
+              TextField(
+                controller: _blogController,
+                maxLines: 7,
+                decoration: InputDecoration(
+                  hintText: 'Write Your Blog here',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              maxLines: 5,
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // Create a new blog post
-                BlogPost newPost = BlogPost(
-                  title: titleController.text,
-                  author: 'User', // You can get the user's name from authentication
-                  content: postController.text,
-                  dateTime: DateTime.now(), // Current date and time
-                  comments: [], // Initially, the post has no comments
-                );
-
-                // Trigger the callback to add the new post to the blog page
-                widget.onPostExperience(newPost);
-
-                // Navigate back to the blog page
-                Navigator.pop(context);
-              },
-              child: Text('Post', style: TextStyle(color: Colors.white)), // Set text color to white
-              style: ElevatedButton.styleFrom(
-                primary: Colors.deepPurpleAccent, // Set button color to deep orange
+              SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () async {
+                  await postBlog();
+                },
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24), // Ajuster le padding au besoin
+                  child: Text(
+                    'Post Blog',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+        
+                  primary: Colors.indigo[300], // Couleur de fond du bouton
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10), // Bord arrondi du bouton
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class BlogPost {
-  final String title;
-  final String author;
-  final String content;
-  final DateTime dateTime;
-  final List<Comment> comments;
-
-  BlogPost({
-    required this.title,
-    required this.author,
-    required this.content,
-    required this.dateTime,
-    required this.comments,
-  });
-}
-
-class Comment {
-  final String author;
-  final String text;
-
-  Comment({required this.author, required this.text});
 }
