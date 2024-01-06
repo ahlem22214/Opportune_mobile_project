@@ -7,6 +7,7 @@ import 'profile.dart';
 import'Home_Page.dart';
 import 'BottomNavBar.dart';
 import 'news_screen.dart';
+import 'ChatScreen.dart'; // Import the ChatScreen
 
 
 class ToolsScreen extends StatefulWidget {
@@ -86,14 +87,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconContainer(
-                          text: 'CV corrector',
-                          containerColor: Color(0xFF51A1EE),
-                          icon: Icons.build_rounded,
+                          text: 'Chatbot', // Updated label
+                          containerColor: Color(0xFF84B6E6),
+                          icon: Icons.chat_bubble_outline,
                           onPressed: () {
+                            // Open the ChatScreen when the Chatbot icon is pressed
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => CvCorrector()),
+                                builder: (context) => ChatScreen(),
+                              ),
                             );
                           },
                         ),

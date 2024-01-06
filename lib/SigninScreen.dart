@@ -119,7 +119,7 @@ class _SigninScreenState extends State<SigninScreen> {
                     Icons.lock,
                     color: Colors.indigo[700],
                   ),
-                  hintText: 'At least 6 characters',
+                  hintText: 'Password',
                   border: InputBorder.none,
                 ),
               ),

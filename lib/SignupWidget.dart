@@ -67,6 +67,8 @@ class HrRepresentativeSignupScreen extends StatefulWidget {
 
 class _HrRepresentativeSignupScreenState
     extends State<HrRepresentativeSignupScreen> {
+
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _firstNameController =
   TextEditingController();
@@ -92,6 +94,8 @@ class _HrRepresentativeSignupScreenState
         return;
       }
 
+
+
       // Validate email format
       if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(_emailController.text)) {
         showSnackbar('Email format is incorrect');
@@ -101,6 +105,10 @@ class _HrRepresentativeSignupScreenState
       // Validate password length
       if (_passwordController.text.length < 6) {
         showSnackbar('Password must be at least 6 characters');
+        return;
+      }
+      if ( _phoneNumberController.text.length !=8 ) {
+        showSnackbar('phone number must be 8 numbers');
         return;
       }
 
@@ -258,7 +266,7 @@ class _HrRepresentativeSignupScreenState
                       Icons.phone,
                       color: Colors.indigo[700],
                     ),
-                    hintText: 'Phone Number',
+                    hintText: 'Phone Number( 8 Numbers)',
                     border: InputBorder.none,
                   ),
                 ),
@@ -358,6 +366,12 @@ class _JobSeekerSignupScreenState
   return;
   }
 
+  if ( _phoneNumberController.text.length !=8 ) {
+    showSnackbar('phone number must be 8 numbers');
+    return;
+  }
+
+
   UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
   email: _emailController.text.trim(),
   password: _passwordController.text,
@@ -386,7 +400,7 @@ class _JobSeekerSignupScreenState
   ScaffoldMessenger.of(context).showSnackBar(
   SnackBar(
   content: Text(message),
-  duration: Duration(seconds: 3),
+  duration: Duration(seconds: 5),
   ),
   );
   }
@@ -505,7 +519,7 @@ class _JobSeekerSignupScreenState
                     Icons.phone,
                     color: Colors.indigo[700],
                   ),
-                  hintText: 'Phone Number',
+                  hintText: 'Phone Number(8 numbers)',
                   border: InputBorder.none,
                 ),
               ),
