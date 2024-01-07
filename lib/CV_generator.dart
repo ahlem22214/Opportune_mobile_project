@@ -13,7 +13,6 @@ class _CvGeneratorState extends State<CvGenerator> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.indigo[700],
         title: Text('CV Generator'),
       ),
       body: SingleChildScrollView(
@@ -490,6 +489,7 @@ class _CvGeneratorState extends State<CvGenerator> {
                     'Generate CV',
                     style: TextStyle(
                       fontSize: 18.0,
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -499,34 +499,7 @@ class _CvGeneratorState extends State<CvGenerator> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.indigo[700],
-        unselectedItemColor: Colors.black45,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: 'Blog',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Tools',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+
     );
   }
 }

@@ -442,7 +442,7 @@ class _ProfilePageState extends State<ProfilePage> {
 class SemiEllipsePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..color = Color(0xFF356899);
+    Paint paint = Paint()..color = Color(0xFF303F9F);
 
     Path path = Path()
       ..moveTo(0, 0)
