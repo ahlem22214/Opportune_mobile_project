@@ -1,3 +1,4 @@
+import 'package:opportune_mobile_app/Landing_Page.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,8 +16,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool isUploading = false; // Track whether an upload is in progress
-
+  bool isUploading = false;
   int _currentIndex = 3;
   late String userId;
   late Map<String, dynamic> userData = Map();
@@ -82,24 +82,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _updateUserData() async {
     try {
-      if (!mounted) return; // Check if the widget is still mounted
+      if (!mounted) return;
 
-      // Set the flag to indicate that an upload is in progress
       isUploading = true;
-
-      // Show loading indicator
       showLoadingSnackBar();
 
-      // Upload the image to Firebase Storage if it's not null
       String? imageUrl;
       if (pickedImage != null) {
         imageUrl = await uploadImage();
-
-        // Check if the widget is still mounted after the image upload
         if (!mounted) return;
       }
 
-      // Update user data in Firestore
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'phoneNumber': phoneNumberController.text,
         'email': emailController.text,
@@ -110,29 +103,22 @@ class _ProfilePageState extends State<ProfilePage> {
         'educationList': educationList,
         'experienceList': experienceList,
         'isNotificationEnabled': userData['isNotificationEnabled'] ?? false,
-        // Add other fields if needed
       });
 
-      // Optional: Fetch and update user data again after a successful update
       await fetchUserData();
 
       if (!mounted) return;
 
-      // Hide loading indicator
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
-
-      // Show success message
       showSuccessSnackBar();
     } catch (error) {
-      // ... error handling
+      // Handle error
     } finally {
-      // Reset the flag when the update process is complete
       isUploading = false;
     }
   }
 
   Future<String?> uploadImage() async {
-    // Upload image to Firebase Storage
     await storageReference.putFile(pickedImage!);
     return storageReference.getDownloadURL();
   }
@@ -154,7 +140,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Prevent navigation if an upload is in progress
         return !isUploading;
       },
       child: Scaffold(
@@ -228,6 +213,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   SizedBox(height: 100),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (emailFormKey.currentState!.validate() &&
+                          phoneFormKey.currentState!.validate() &&
+                          bioFormKey.currentState!.validate()) {
+                        _updateUserData();
+                      }
+                    },
+                    child: Text('Save'),
+                  ),
+                  SizedBox(height: 15),
+                  buildLogoutButton(), // Added logout button
                 ],
               ),
             ),
@@ -267,7 +264,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void navigateTo(Widget page) {
-    // Allow navigation only if no update is in progress
     if (!isUploading) {
       Navigator.pushReplacement(
         context,
@@ -303,7 +299,6 @@ class _ProfilePageState extends State<ProfilePage> {
             if (label == 'Phone Number' && !isValidPhoneNumber(value!)) {
               return 'Invalid phone number';
             }
-            // Add more validation logic based on your requirements
             return null;
           },
         ),
@@ -411,7 +406,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return phoneRegex.hasMatch(phone);
   }
 
-
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -421,6 +415,27 @@ class _ProfilePageState extends State<ProfilePage> {
         pickedImage = File(image.path);
       });
     }
+  }
+
+  Widget buildLogoutButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 70.0, vertical: 4),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          await FirebaseAuth.instance.signOut();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => FirstPage()),
+          );
+        },
+        icon: Icon(Icons.logout,color: Colors.black),
+        label: Text('Logout',style: TextStyle(color: Colors.black)),
+        style: ElevatedButton.styleFrom(
+          primary: Colors.red[900],
+
+        ),
+      ),
+    );
   }
 }
 
@@ -444,3 +459,5 @@ class SemiEllipsePainter extends CustomPainter {
     return false;
   }
 }
+
+

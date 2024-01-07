@@ -1,4 +1,3 @@
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'Home_Page.dart';
@@ -14,6 +13,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,21 +21,16 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute:'/landing',
+      initialRoute: '/landing',
       routes: {
         '/landing': (context) => FirstPage(),
         '/signin': (context) => SigninScreen(),
         '/signup': (context) => SignupWidget(),
         '/hr_signup': (context) => HrRepresentativeSignupScreen(),
         '/job_seeker_signup': (context) => JobSeekerSignupScreen(),
-        '/home': (context) => HomePage(isUser:true),
+        '/home': (context) => HomePage(isUser: true),
         '/company_home': (context) => JobList(),
       },
     );
   }
 }
-
-
-
-
-

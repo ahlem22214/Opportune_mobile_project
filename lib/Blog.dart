@@ -302,7 +302,7 @@ class AddCommentWidget extends StatelessWidget {
         SizedBox(height: 16),
         Row(
           children: [
-            Expanded(
+            Expanded (
               child: TextField(
                 controller: _commentController,
                 decoration: InputDecoration(
@@ -449,7 +449,7 @@ class _PostBlogPageState extends State<PostBlogPage> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-        
+
                   primary: Colors.indigo[300], // Couleur de fond du bouton
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10), // Bord arrondi du bouton

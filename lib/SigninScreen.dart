@@ -48,12 +48,12 @@ class _SigninScreenState extends State<SigninScreen> {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
 
 
-          SnackBar(
+        SnackBar(
           content: Text(errorMessage),
-    duration: Duration(seconds: 5),
-    ),
-    );
-  }
+          duration: Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override

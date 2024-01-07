@@ -30,18 +30,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
         ),
         body: Column(
           children: [
-            SizedBox(height: 10),
-            Center(
-              child: Text(
-                'Tools',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
+            SizedBox(height: 100),
+
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -88,7 +78,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       children: [
                         IconContainer(
                           text: 'Chatbot', // Updated label
-                          containerColor: Color(0xFF84B6E6),
+                          containerColor: Color(0xFF51A1EE),
                           icon: Icons.chat_bubble_outline,
                           onPressed: () {
                             // Open the ChatScreen when the Chatbot icon is pressed
@@ -102,18 +92,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         ),
                         SizedBox(width: 12),
                         IconContainer(
-                          text: 'Interviews',
-                          containerColor: Color(0xFF84B6E6),
-                          icon: Icons.personal_video_outlined,
-                          // Replace with your icon
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => NewsScreen()),
-                            );
-                          },
-                        ),
+                           text: 'Technology \n Updates',
+
+                            containerColor: Color(0xFF84B6E6),
+                            icon: Icons.travel_explore,
+                            // Replace with your icon
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => NewsScreen()),
+                              );
+                            },
+                          ),
+
                       ],
                     ),
                   ),
